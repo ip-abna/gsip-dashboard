@@ -1,5 +1,6 @@
 {
   "name": "abna-campaign-dashboard",
+  "packageManager": "bun@1.4.2",
   "private": true,
   "version": "1.0.0",
   "description": "Relatório Nacional de RP/IP da ABNA - Associação Brasileira de Narcóticos Anônimos",
