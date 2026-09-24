@@ -238,11 +238,10 @@ export class GoogleSheetsService {
 }
 
 /**
- * Padrões públicos (espelham o .env.example) usados quando a variável de ambiente
- * não está definida — assim o app roda sem .env. A chave é uma API key PÚBLICA do
- * Google (deve ser restrita por referenciador HTTP no console) e já é embutida no
- * bundle publicado, então mantê-la aqui não expõe nada novo. Em produção o build
- * sobrepõe estes valores com os GitHub Secrets.
+ * Valores de produção — o deploy não usa GitHub Secrets. A chave é uma API key
+ * PÚBLICA do Google (vai no bundle de qualquer jeito); quem a protege é a restrição
+ * por referenciador HTTP no Google Cloud (veja DEPLOYMENT.md). Para trocar a chave,
+ * a planilha ou a aba, edite aqui. Um .env local só sobrepõe estes valores.
  */
 const DEFAULT_API_KEY = 'AIzaSyBYKjFB2d6RTTtmxRBKDbtwD5VKWs8o_z4';
 const DEFAULT_SPREADSHEET_ID = '1X_NnjQTEWJ8Se9Anm5CvD5BIGdjKo5BadYEqnxPnLKY';

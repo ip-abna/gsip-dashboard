@@ -23,14 +23,11 @@ Um painel em React para visualizar os dados das campanhas de Narcóticos Anônim
 ### Instalação
 
 ```bash
-# Instalar dependências
 bun install
-
-# Copiar variáveis de ambiente
-cp .env.example .env
-
-# Adicione sua chave da API do Google Sheets ao .env
 ```
+
+Não precisa de `.env`: a chave da API e a planilha já estão no código (veja
+[Google Sheets](#google-sheets)).
 
 ### Desenvolvimento
 
@@ -63,67 +60,18 @@ src/
 └── test/           # Configuração e utilitários de teste
 ```
 
-## Variáveis de Ambiente
+## Google Sheets
 
-Crie um arquivo `.env` baseado no `.env.example`:
+O painel lê as respostas do formulário direto de uma planilha pública do Google. A
+chave da API, o ID da planilha e a aba ficam em `src/services/GoogleSheetsService.ts`.
+Para testar outro valor na sua máquina sem mexer no código, copie `.env.example` para
+`.env` e descomente a linha que quer trocar.
 
-- `VITE_GOOGLE_SHEETS_API_KEY`: Sua chave da API do Google Sheets
-- `VITE_GOOGLE_SHEETS_SPREADSHEET_ID`: O ID da planilha (valor padrão já fornecido)
-- `VITE_GOOGLE_SHEETS_RANGE`: O intervalo a ser buscado (ex.: "Sheet1!A:Z")
+## Publicação
 
-## Implantação
-
-O projeto está configurado para implantação automática no GitHub Pages via GitHub Actions.
-
-Para instruções detalhadas de implantação, consulte [DEPLOYMENT.md](./DEPLOYMENT.md).
-
-### Início Rápido
-
-1. **Ative o GitHub Pages**: Nas configurações do repositório, vá em Pages e defina a origem como "GitHub Actions"
-
-2. **Configure a chave da API**: A chave da API do Google Sheets precisa ser configurada como um segredo do repositório:
-   - Acesse Settings → Secrets and variables → Actions
-   - Adicione um novo segredo de repositório chamado `VITE_GOOGLE_SHEETS_API_KEY`
-   - Defina o valor como sua chave da API do Google Sheets
-
-3. **Implante**: Faça push para a branch `main` para acionar a implantação automática
-
-O workflow irá:
-- Instalar as dependências usando Bun
-- Executar o build de produção
-- Implantar no GitHub Pages
-
-### Cloudflare Pages (opcional)
-
-O workflow `.github/workflows/deploy-cloudflare.yml` implanta no Cloudflare Pages **somente se** os segredos do Cloudflare estiverem configurados. Sem eles, o workflow se auto-ignora a cada push e o GitHub Pages continua sendo a implantação padrão — nada a fazer.
-
-Para ativar:
-
-1. **Crie o projeto no Cloudflare Pages** (uma vez): `bunx wrangler pages project create abna-dashboard`
-2. **Adicione os segredos do repositório** em Settings → Secrets and variables → Actions:
-   - `CLOUDFLARE_API_TOKEN`: token de API com a permissão "Cloudflare Pages — Edit"
-   - `CLOUDFLARE_ACCOUNT_ID`: o ID da sua conta Cloudflare (visível no painel do Cloudflare)
-3. **Faça push para `main`** — o build usa os mesmos segredos `VITE_GOOGLE_SHEETS_*` do GitHub Pages
-
-Notas:
-
-- Para usar outro nome de projeto, defina a variável de repositório (`Variables`, não `Secrets`) `CLOUDFLARE_PAGES_PROJECT`
-- O build para o Cloudflare usa `--base=/` (o site é servido na raiz do domínio, diferente do caminho `/abna-dashboard/` do GitHub Pages)
-- Adicione o domínio do Cloudflare (ex.: `https://abna-dashboard.pages.dev/*`) às restrições de referenciador HTTP da chave da API do Google no Google Cloud Console — sem isso, a API do Google Sheets rejeitará as requisições vindas do novo domínio
-
-### Implantação Manual
-
-Para testar o build de produção localmente:
-
-```bash
-# Gerar build de produção
-bun run build
-
-# Pré-visualizar o build de produção
-bun run preview
-```
-
-O build de produção será gerado no diretório `dist/`.
+Todo push na `main` publica em https://ip-abna.github.io/gsip-dashboard/. O passo a
+passo (GitHub Pages, chave do Google e o Cloudflare opcional) está em
+[DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Testes
 
