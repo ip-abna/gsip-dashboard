@@ -32,7 +32,15 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
+
+      # main deploys on every push, with no PR check in front of it, so the
+      # deploy itself refuses to publish a red lint or test run.
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test:run
 
       # The Google Sheets key, spreadsheet ID and range are public (they ship in
       # the bundle anyway) and live as defaults in src/services/GoogleSheetsService.ts.
