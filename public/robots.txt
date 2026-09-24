@@ -1,4 +1,2 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://gusnips.github.io/abna-dashboard/sitemap.xml

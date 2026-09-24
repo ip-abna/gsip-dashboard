@@ -2,14 +2,14 @@
     "name": "Relatório Nacional de RP/IP",
     "short_name": "ABNA RP/IP",
     "description": "Relatório Nacional de RP/IP da ABNA - Associação Brasileira de Narcóticos Anônimos",
-    "start_url": "/abna-dashboard/",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#1e40af",
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/abna-dashboard/abna-logo.svg",
+            "src": "abna-logo.svg",
             "sizes": "any",
             "type": "image/svg+xml",
             "purpose": "any maskable"
