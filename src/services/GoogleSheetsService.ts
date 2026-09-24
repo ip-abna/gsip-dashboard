@@ -243,7 +243,7 @@ export class GoogleSheetsService {
  * por referenciador HTTP no Google Cloud (veja DEPLOYMENT.md). Para trocar a chave,
  * a planilha ou a aba, edite aqui. Um .env local só sobrepõe estes valores.
  */
-const DEFAULT_API_KEY = 'AIzaSyBYKjFB2d6RTTtmxRBKDbtwD5VKWs8o_z4';
+const DEFAULT_API_KEY = 'AIzaSyDdBdySPffBf1bndFpnEZaje0C1kN8wm4o';
 const DEFAULT_SPREADSHEET_ID = '1X_NnjQTEWJ8Se9Anm5CvD5BIGdjKo5BadYEqnxPnLKY';
 const DEFAULT_RANGE = 'Respostas ao formulário 4!A:CS';
 

@@ -14,7 +14,9 @@ No repositório: **Settings → Pages → Build and deployment → Source: GitHu
 
 ## 2. Criar a chave da API do Google (uma vez)
 
-Use a conta Google da ABNA, não uma conta pessoal.
+A chave em uso fica no projeto `gs-ip-509623` do Google Cloud, na conta Google da ABNA.
+Para trocá-la, repita os passos abaixo nesse projeto. Use a conta da ABNA, não uma
+conta pessoal.
 
 1. Abra o [Google Cloud Console](https://console.cloud.google.com/).
 2. No seletor de projetos, no topo, crie um projeto (ex.: `gsip-dashboard`).
