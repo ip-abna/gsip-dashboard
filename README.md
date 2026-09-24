@@ -12,7 +12,7 @@ Um painel em React para visualizar os dados das campanhas de Narcóticos Anônim
 - **Estilização**: Tailwind CSS 4+
 - **Gráficos**: Recharts
 - **Testes**: Vitest + @testing-library/react + fast-check (PBT)
-- **Implantação**: GitHub Pages (padrão) + Cloudflare Pages (opcional)
+- **Implantação**: GitHub Pages
 
 ## Primeiros Passos
 
@@ -70,8 +70,7 @@ Para testar outro valor na sua máquina sem mexer no código, copie `.env.exampl
 ## Publicação
 
 Todo push na `main` publica em https://ip-abna.github.io/gsip-dashboard/. O passo a
-passo (GitHub Pages, chave do Google e o Cloudflare opcional) está em
-[DEPLOYMENT.md](./DEPLOYMENT.md).
+passo (GitHub Pages e chave do Google) está em [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Testes
 

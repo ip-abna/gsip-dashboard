@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Caminhos relativos: o HashRouter mantém todas as páginas na mesma URL, então
-  // o mesmo build funciona em /gsip-dashboard/ (GitHub Pages) e na raiz (Cloudflare).
+  // Caminhos relativos: o HashRouter mantém todas as páginas na mesma URL, então o
+  // build funciona em /gsip-dashboard/ (GitHub Pages) e segue funcionando se o repo mudar de nome.
   base: './',
   server: {
     host: '0.0.0.0',
