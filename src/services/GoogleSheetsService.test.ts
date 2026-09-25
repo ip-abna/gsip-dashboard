@@ -58,7 +58,10 @@ describe('GoogleSheetsService.fetchData', () => {
 
         const data = await service.fetchData();
 
-        expect(decodeURIComponent(fetchMock.mock.calls[1][0])).toContain("/values/'Respostas ao formulário 5'?");
+        const valuesUrl = decodeURIComponent(fetchMock.mock.calls[1][0]);
+        expect(valuesUrl).toContain("/values/'Respostas ao formulário 5'?");
+        // Números sem a formatação da localidade: "150.50" nos EUA não pode virar 15050
+        expect(valuesUrl).toContain('valueRenderOption=UNFORMATTED_VALUE');
         expect(data).toEqual({
             rows: [{ 'Carimbo de data/hora': '9/9/2026 21:04:16', 'Nome': 'Ana' }],
             locale: 'en_US'

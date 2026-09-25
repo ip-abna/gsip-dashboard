@@ -121,8 +121,12 @@ export class GoogleSheetsService {
         // Aba entre aspas simples (notação A1) e codificada: espaços e acentos
         // quebrariam o intervalo e a URL
         const range = encodeURIComponent(`'${tab.replace(/'/g, "''")}'`);
+        // Números chegam como número, sem a formatação da localidade ("150,50"
+        // no Brasil, "150.50" nos EUA). Datas continuam como texto formatado, e
+        // o DataParser lê a ordem de dia e mês pela localidade.
         const data = await this.getJson<{ values?: unknown[][] }>(
-            `${sheetUrl}/values/${range}?key=${apiKey}`
+            `${sheetUrl}/values/${range}?valueRenderOption=UNFORMATTED_VALUE` +
+            `&dateTimeRenderOption=FORMATTED_STRING&key=${apiKey}`
         );
 
         return {
