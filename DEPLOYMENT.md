@@ -42,7 +42,27 @@ Uma chave de API só lê planilhas públicas. Na planilha: **Compartilhar → Ac
 Qualquer pessoa com o link → Leitor**.
 
 Se a planilha ou a aba mudar, atualize `DEFAULT_SPREADSHEET_ID` (o trecho entre `/d/` e
-`/edit` na URL da planilha) ou `DEFAULT_RANGE` (ex.: `Respostas ao formulário 4!A:CS`).
+`/edit` na URL da planilha) ou `DEFAULT_RANGE` (só o nome da aba, ex.:
+`Respostas ao formulário 4`).
+
+## Antes de mexer no formulário ou na planilha
+
+O painel lê a aba `Respostas ao formulário 4` e acha cada coluna pelo título da pergunta.
+
+- **Não desvincule nem religue o formulário.** Religar cria uma aba nova
+  ("Respostas ao formulário 5"), e o painel continua lendo a antiga. Se precisar
+  religar, troque o `DEFAULT_RANGE` pelo nome da aba nova.
+- **Renomear uma pergunta renomeia a coluna.** Maiúsculas e espaços a mais não
+  importam. Trocar palavras faz o painel perder o dado sem avisar: ele aparece como
+  0 ou vazio. Se renomear, atualize o título em `src/utils/DataParser.ts`.
+- **Pergunta nova vira coluna nova** no fim da aba. O painel lê a aba inteira, mas
+  só mostra a pergunta nova depois que alguém programar isso.
+- **Deixe a planilha em Português (Brasil)**, em **Arquivo → Configurações →
+  Localidade**. O painel lê as datas como dd/mm/aaaa. Em outra localidade, 04/11
+  vira 11/04.
+- A coluna `ID_Resposta` e as abas `Materiais` e `Materiais Concatenados` vêm de um
+  script da planilha (**Extensões → Apps Script**), não do formulário. O painel não
+  usa nenhum deles.
 
 ## Publicar
 

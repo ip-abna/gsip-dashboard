@@ -80,7 +80,7 @@ export class GoogleSheetsService {
     async fetchData(): Promise<RawSheetRow[]> {
         const { spreadsheetId, range, apiKey } = this.config;
         // O range precisa ser codificado: nomes de aba com espaços/acentos
-        // (ex.: "Respostas ao formulário 4!A:CS") quebram a URL sem encode.
+        // (ex.: "Respostas ao formulário 4") quebram a URL sem encode.
         const url = `${this.baseUrl}/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
 
         try {
@@ -245,7 +245,9 @@ export class GoogleSheetsService {
  */
 const DEFAULT_API_KEY = 'AIzaSyDdBdySPffBf1bndFpnEZaje0C1kN8wm4o';
 const DEFAULT_SPREADSHEET_ID = '1X_NnjQTEWJ8Se9Anm5CvD5BIGdjKo5BadYEqnxPnLKY';
-const DEFAULT_RANGE = 'Respostas ao formulário 4!A:CS';
+// Só o nome da aba, sem limite de colunas: pergunta nova no formulário vira coluna
+// nova no fim da aba, e um limite como A:CS cortaria essa coluna sem dar erro.
+const DEFAULT_RANGE = 'Respostas ao formulário 4';
 
 /**
  * Função factory para criar GoogleSheetsService a partir de variáveis de ambiente
