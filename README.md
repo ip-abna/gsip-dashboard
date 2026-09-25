@@ -63,9 +63,9 @@ src/
 ## Google Sheets
 
 O painel lê as respostas do formulário direto de uma planilha pública do Google. A
-chave da API, o ID da planilha e a aba ficam em `src/services/GoogleSheetsService.ts`.
-Para testar outro valor na sua máquina sem mexer no código, copie `.env.example` para
-`.env` e descomente a linha que quer trocar.
+chave da API e o ID da planilha ficam em `src/services/GoogleSheetsService.ts`. O
+painel acha sozinho a aba de respostas. Para testar outro valor na sua máquina sem
+mexer no código, copie `.env.example` para `.env` e descomente a linha que quer trocar.
 
 ## Publicação
 
