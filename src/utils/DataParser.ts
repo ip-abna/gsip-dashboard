@@ -575,7 +575,6 @@ export class DataParser {
             cartao: this.parseNumber(this.cell(row, 'Cartão - apenas número')) || 0,
             folder: this.parseNumber(this.cell(row, 'Folder - apenas número')) || 0,
             ips: this.parseNumber(this.cell(row, 'IPs - Folhetos - apenas número')) || 0,
-            folhetos: this.parseNumber(this.cell(row, 'Folhetos - apenas número')) || 0,
             textoBasico: this.parseNumber(this.cell(row, 'Texto Básico - apenas número')) || 0,
             pastaRP: this.parseNumber(this.cell(row, 'Pasta RP - apenas número')) || 0,
             lixoCar: this.parseNumber(this.cell(row, 'Lixo Car - apenas número')) || 0,

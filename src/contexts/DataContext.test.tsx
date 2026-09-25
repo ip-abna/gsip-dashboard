@@ -98,7 +98,6 @@ describe('DataContext', () => {
                     cartao: 3,
                     folder: 4,
                     ips: 6,
-                    folhetos: 7,
                     textoBasico: 1,
                     pastaRP: 2,
                     lixoCar: 0,

@@ -82,7 +82,6 @@ export function calculateSummaryStatistics(records: CampaignRecord[]): SummarySt
             materials.cartao +
             materials.folder +
             materials.ips +
-            materials.folhetos +
             materials.textoBasico +
             materials.pastaRP +
             materials.lixoCar +
@@ -186,8 +185,8 @@ const MATERIAL_LABELS: Record<keyof CampaignRecord['materials'], string> = {
     listaGrupos: 'Lista de Grupos',
     cartao: 'Cartão',
     folder: 'Folder',
-    ips: 'IPs',
-    folhetos: 'Folhetos',
+    // A pergunta do formulário é "IPs - Folhetos": é aqui que os folhetos entram
+    ips: 'IPs (folhetos)',
     textoBasico: 'Texto Básico',
     pastaRP: 'Pasta RP',
     lixoCar: 'Lixo Car',
@@ -212,7 +211,6 @@ export function aggregateMaterials(records: CampaignRecord[]): MaterialRow[] {
         cartao: 0,
         folder: 0,
         ips: 0,
-        folhetos: 0,
         textoBasico: 0,
         pastaRP: 0,
         lixoCar: 0,

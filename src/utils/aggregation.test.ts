@@ -45,7 +45,6 @@ function createMockRecord(overrides: Partial<CampaignRecord> = {}): CampaignReco
             cartao: 20,
             folder: 15,
             ips: 10,
-            folhetos: 25,
             textoBasico: 3,
             pastaRP: 2,
             lixoCar: 1,
@@ -83,7 +82,6 @@ describe('calculateSummaryStatistics', () => {
                 cartao: 0,
                 folder: 0,
                 ips: 0,
-                folhetos: 0,
                 textoBasico: 0,
                 pastaRP: 0,
                 lixoCar: 0,
@@ -116,7 +114,6 @@ describe('calculateSummaryStatistics', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -136,7 +133,6 @@ describe('calculateSummaryStatistics', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -156,7 +152,6 @@ describe('calculateSummaryStatistics', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -260,7 +255,7 @@ describe('aggregateMaterials', () => {
     it('deve retornar todos os tipos de materiais com quantidades zeradas para array vazio', () => {
         const materials = aggregateMaterials([]);
 
-        expect(materials).toHaveLength(12);
+        expect(materials).toHaveLength(11);
         expect(materials.every(m => m.quantity === 0)).toBe(true);
     });
 
@@ -274,7 +269,6 @@ describe('aggregateMaterials', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -290,7 +284,6 @@ describe('aggregateMaterials', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -321,7 +314,6 @@ describe('aggregateMaterials', () => {
                     cartao: 0,
                     folder: 0,
                     ips: 0,
-                    folhetos: 0,
                     textoBasico: 0,
                     pastaRP: 0,
                     lixoCar: 0,
@@ -340,7 +332,7 @@ describe('aggregateMaterials', () => {
     });
 
 
-    it('deve incluir todos os 12 tipos de materiais com labels em português', () => {
+    it('deve incluir todos os 11 tipos de materiais com labels em português', () => {
         const materials = aggregateMaterials([]);
 
         const expectedMaterials = [
@@ -349,8 +341,7 @@ describe('aggregateMaterials', () => {
             'Lista de Grupos',
             'Cartão',
             'Folder',
-            'IPs',
-            'Folhetos',
+            'IPs (folhetos)',
             'Texto Básico',
             'Pasta RP',
             'Lixo Car',

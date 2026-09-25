@@ -140,7 +140,6 @@ describe('Componente Dashboard', () => {
                     cartao: 20,
                     folder: 15,
                     ips: 10,
-                    folhetos: 25,
                     textoBasico: 5,
                     pastaRP: 3,
                     lixoCar: 2,

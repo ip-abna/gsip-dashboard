@@ -16,7 +16,6 @@ export interface MaterialsDistributed {
     cartao: number;
     folder: number;
     ips: number;
-    folhetos: number;
     textoBasico: number;
     pastaRP: number;
     lixoCar: number;

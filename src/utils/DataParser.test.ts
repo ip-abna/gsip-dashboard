@@ -67,6 +67,11 @@ describe('parseRow', () => {
         expect(parser.parseRow(makeRow()).id).toBe('abc-123');
     });
 
+    it('lê os folhetos da pergunta "IPs - Folhetos"', () => {
+        const record = parser.parseRow(makeRow({ 'IPs - Folhetos - apenas número': '5' }));
+        expect(record.materials.ips).toBe(5);
+    });
+
     // Cabeçalhos reais da planilha, que diferem do título "limpo" da pergunta
     it('acha a coluna mesmo com espaço duplo no cabeçalho', () => {
         const record = parser.parseRow(makeRow({ 'Pasta RP  - apenas número': '1' }));
