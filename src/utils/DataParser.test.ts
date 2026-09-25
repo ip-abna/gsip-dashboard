@@ -80,4 +80,12 @@ describe('parse', () => {
         expect(records).toHaveLength(3);
         expect(parser.getWarnings()).toHaveLength(0);
     });
+
+    it('funciona sem a coluna ID_Resposta, que é do script e não do formulário', () => {
+        // Religar o formulário cria uma aba nova só com as perguntas, sem essa coluna
+        const semId: Record<string, unknown> = makeRow();
+        delete semId['ID_Resposta'];
+        const records = new DataParser().parse([semId]);
+        expect(records).toHaveLength(1);
+    });
 });

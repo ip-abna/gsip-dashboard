@@ -271,8 +271,9 @@ export class DataParser {
      * Valida que as colunas obrigatórias existem no dataset
      */
     private validateSchema(rows: RawSheetRow[]): void {
+        // Só perguntas do formulário. ID_Resposta fica de fora: é do script da
+        // planilha, e uma aba nova (formulário religado) nasce sem essa coluna.
         const requiredColumns = [
-            'ID_Resposta',
             'Carimbo de data/hora',
             'Selecione o CSR',
             'Selecione o Estado',
