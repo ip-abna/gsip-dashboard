@@ -44,10 +44,27 @@ const BRAZILIAN_STATES = [
 ] as const;
 
 /**
- * Data no padrão brasileiro gravado pela planilha: dd/mm/aaaa, com hora opcional
- * ("04/11/2025" ou "04/11/2025 21:32:38")
+ * Data com barras, como a planilha formata: "04/11/2025" ou "04/11/2025 21:32:38".
+ * Se o dia ou o mês vem primeiro depende da localidade da planilha (isMonthFirst).
  */
-const BR_DATE_PATTERN = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+const SLASH_DATE_PATTERN = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/**
+ * A API entrega as datas como texto, formatadas na localidade da planilha. Em
+ * Português (Brasil) é 23/09/2026; em inglês (EUA) é 9/23/2026. Pergunta ao Intl
+ * em que ordem a localidade escreve dia e mês.
+ */
+function isMonthFirst(sheetLocale: string): boolean {
+    try {
+        const order = new Intl.DateTimeFormat(sheetLocale.replace('_', '-'))
+            .formatToParts(new Date(2000, 11, 31))
+            .map(part => part.type);
+        return order.indexOf('month') < order.indexOf('day');
+    } catch {
+        // Localidade que o Intl não conhece: fica com o padrão brasileiro
+        return false;
+    }
+}
 
 /**
  * Nomes dos CSRs para mapeamento
@@ -98,6 +115,14 @@ function byColumnKey(row: RawSheetRow): RawSheetRow {
  */
 export class DataParser {
     private warnings: string[] = [];
+    private readonly monthFirst: boolean;
+
+    /**
+     * @param sheetLocale Localidade da planilha (ex.: "pt_BR"), que a API informa
+     */
+    constructor(sheetLocale = 'pt_BR') {
+        this.monthFirst = isMonthFirst(sheetLocale);
+    }
 
     /**
      * Processa linhas brutas da planilha em objetos CampaignRecord tipados
@@ -378,10 +403,10 @@ export class DataParser {
     /**
      * Processa uma data de vários formatos
      *
-     * A planilha grava no padrão brasileiro (dd/mm/aaaa, hora opcional), que
-     * precisa de parsing explícito: `new Date()` lê barras como mm/dd/aaaa e
-     * erra silenciosamente todo dia menor ou igual a 12 ("04/11/2025" viraria
-     * 11 de abril) ou devolve Invalid Date acima disso ("23/02/2026").
+     * Datas com barras precisam de parsing explícito: `new Date()` sempre lê
+     * mm/dd/aaaa, e numa planilha brasileira erraria sem avisar todo dia até 12
+     * ("04/11/2025" viraria 11 de abril) e rejeitaria o resto ("23/02/2026").
+     * A ordem de dia e mês vem da localidade da planilha (construtor).
      */
     parseDate(value: unknown): Date | null {
         if (!value || value === '') {
@@ -396,9 +421,10 @@ export class DataParser {
         // Tenta processar como string
         const str = String(value).trim();
 
-        const br = str.match(BR_DATE_PATTERN);
-        if (br) {
-            const [, day, month, year, hours = '0', minutes = '0', seconds = '0'] = br;
+        const slash = str.match(SLASH_DATE_PATTERN);
+        if (slash) {
+            const [, first, second, year, hours = '0', minutes = '0', seconds = '0'] = slash;
+            const [day, month] = this.monthFirst ? [second, first] : [first, second];
             const date = new Date(+year, +month - 1, +day, +hours, +minutes, +seconds);
 
             // Descarta datas inexistentes (31/02), que o Date rolaria para março

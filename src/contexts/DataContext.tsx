@@ -104,12 +104,12 @@ export function DataProvider({ children }: DataProviderProps) {
         setError(null);
 
         try {
-            // Cria o serviço e o parser
-            const service = createGoogleSheetsService();
-            const parser = new DataParser();
-
             // Busca as respostas brutas do Google Sheets
-            const { rows } = await service.fetchData();
+            const service = createGoogleSheetsService();
+            const { rows, locale } = await service.fetchData();
+
+            // A localidade da planilha decide a ordem de dia e mês nas datas
+            const parser = new DataParser(locale);
 
             // Converte dados brutos em objetos CampaignRecord
             const parsedRecords = parser.parse(rows);

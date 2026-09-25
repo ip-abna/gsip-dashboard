@@ -46,6 +46,19 @@ describe('parseDate', () => {
         expect(parser.parseDate('31/02/2026')).toBeNull();
     });
 
+    it('lê mês antes do dia quando a planilha está em inglês (EUA)', () => {
+        const date = new DataParser('en_US').parseDate('9/23/2026 21:04:16')!;
+        expect(date.getDate()).toBe(23);
+        expect(date.getMonth()).toBe(8); // setembro
+        expect(date.getHours()).toBe(21);
+    });
+
+    it('mantém dia antes do mês nas outras localidades', () => {
+        expect(new DataParser('pt_BR').parseDate('04/11/2025')!.getMonth()).toBe(10);
+        expect(new DataParser('en_GB').parseDate('04/11/2025')!.getMonth()).toBe(10);
+        expect(new DataParser('xx_??').parseDate('04/11/2025')!.getMonth()).toBe(10);
+    });
+
     it('continua aceitando ISO e valores vazios', () => {
         expect(parser.parseDate('2025-11-04T12:00:00Z')?.getUTCDate()).toBe(4);
         expect(parser.parseDate('')).toBeNull();
