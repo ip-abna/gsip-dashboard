@@ -118,14 +118,52 @@ describe('parse', () => {
         ]);
 
         expect(records).toHaveLength(3);
-        expect(parser.getWarnings()).toHaveLength(0);
+        expect(parser.getIssues().skippedResponses).toEqual([]);
     });
 
     it('funciona sem a coluna ID_Resposta, que é do script e não do formulário', () => {
         // Religar o formulário cria uma aba nova só com as perguntas, sem essa coluna
         const semId: Record<string, unknown> = makeRow();
         delete semId['ID_Resposta'];
-        const records = new DataParser().parse([semId]);
+        const parser = new DataParser();
+        expect(parser.parse([semId])).toHaveLength(1);
+        expect(parser.getIssues().missingColumns).not.toContain('ID_Resposta');
+    });
+});
+
+describe('getIssues', () => {
+    it('aponta a pergunta renomeada no formulário, que deixaria o número zerado', () => {
+        const parser = new DataParser();
+        parser.parse([makeRow({ 'Pasta RP - quantidade': '3' })]);
+        expect(parser.getIssues().missingColumns).toContain('Pasta RP - apenas número');
+    });
+
+    it('não aponta a pergunta que existe, mesmo com espaço duplo no cabeçalho', () => {
+        const parser = new DataParser();
+        parser.parse([makeRow({ 'Pasta RP  - apenas número': '1' })]);
+        expect(parser.getIssues().missingColumns).not.toContain('Pasta RP - apenas número');
+    });
+
+    it('conta as respostas que ficaram de fora, agrupadas pelo motivo', () => {
+        const parser = new DataParser();
+        const records = parser.parse([
+            makeRow(),
+            makeRow({ 'Formato do Atendimento': 'Remoto' }),
+            makeRow({ 'Formato do Atendimento': 'Remoto' }),
+            makeRow({ 'Data': '' })
+        ]);
+
         expect(records).toHaveLength(1);
+        expect(parser.getIssues().skippedResponses).toEqual([
+            { reason: 'com a opção “Remoto” em “Formato do Atendimento”, que o painel não conhece', count: 2 },
+            { reason: 'sem “Data” válida', count: 1 }
+        ]);
+    });
+
+    it('recomeça a cada parse, sem acumular problemas de cargas anteriores', () => {
+        const parser = new DataParser();
+        parser.parse([makeRow({ 'Data': '' })]);
+        parser.parse([makeRow()]);
+        expect(parser.getIssues().skippedResponses).toEqual([]);
     });
 });

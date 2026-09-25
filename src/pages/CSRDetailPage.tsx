@@ -28,6 +28,7 @@ import {
     ActivityColumnChart,
     GeographicRanking,
     MaterialsTable,
+    DataIssuesNotice,
 } from '../components';
 import {
     filterRecordsByCSR,
@@ -90,6 +91,8 @@ function CSRDetailContent({ slug }: { slug: string }) {
             <Header selectedCSR={csr} />
 
             <main className="container mx-auto px-4 py-6 space-y-6 animate-fade-in-up">
+                <DataIssuesNotice />
+
                 {/* Breadcrumb + seletor de CSR */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <nav className="flex items-center gap-2 text-sm text-gray-600">

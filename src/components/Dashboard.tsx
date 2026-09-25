@@ -28,7 +28,8 @@ import {
     RegionalActivityChart,
     TimeSeriesLineChart,
     GeographicRanking,
-    MaterialsTable
+    MaterialsTable,
+    DataIssuesNotice
 } from './';
 
 /**
@@ -96,6 +97,8 @@ export function Dashboard() {
 
             {/* Conteúdo Principal */}
             <main className="container mx-auto px-4 py-6 space-y-6 animate-fade-in-up">
+                <DataIssuesNotice />
+
                 {/* Barra de Filtros */}
                 <section>
                     <FilterBar />

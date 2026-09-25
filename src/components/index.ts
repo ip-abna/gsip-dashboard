@@ -17,5 +17,6 @@ export { RegionalActivityChart } from './RegionalActivityChart';
 export { TimeSeriesLineChart } from './TimeSeriesLineChart';
 export { GeographicRanking } from './GeographicRanking';
 export { MaterialsTable } from './MaterialsTable';
+export { DataIssuesNotice } from './DataIssuesNotice';
 export { Dashboard } from './Dashboard';
 export { default as ErrorBoundary } from './ErrorBoundary';

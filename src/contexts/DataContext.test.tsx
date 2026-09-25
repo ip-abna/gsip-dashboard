@@ -79,7 +79,6 @@ describe('DataContext', () => {
                 csrCSAMap: {},
                 state: 'SP',
                 city: 'São Paulo',
-                neighborhood: 'Centro',
                 activityDate: new Date('2024-01-20'),
                 activityTime: '14:00',
                 serviceStructure: 'Sub-comitê',
@@ -118,8 +117,9 @@ describe('DataContext', () => {
         } as unknown as GoogleSheetsService);
 
         // Mock do DataParser como construtor
-        vi.mocked(utils.DataParser).mockImplementation(function (this: { parse: typeof mockParse; extractFilterOptions: ReturnType<typeof vi.fn> }) {
+        vi.mocked(utils.DataParser).mockImplementation(function (this: { parse: typeof mockParse; getIssues: ReturnType<typeof vi.fn>; extractFilterOptions: ReturnType<typeof vi.fn> }) {
             this.parse = mockParse;
+            this.getIssues = vi.fn(() => ({ missingColumns: [], skippedResponses: [] }));
             this.extractFilterOptions = vi.fn();
             return this;
         } as unknown as typeof utils.DataParser);

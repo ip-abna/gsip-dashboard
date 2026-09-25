@@ -67,7 +67,6 @@ export interface CampaignRecord {
     csrCSAMap: CSRCSAMap;
     state: string;
     city: string | null;
-    neighborhood: string | null;
     activityDate: Date;
     activityTime: string;
     serviceStructure: ServiceStructure;
@@ -203,6 +202,16 @@ export interface SheetData {
     locale: string;
 }
 
+/**
+ * O que está na planilha e o painel não conseguiu mostrar
+ */
+export interface DataIssues {
+    /** Perguntas que o painel procura e a planilha não tem (o texto mudou no formulário) */
+    missingColumns: string[];
+    /** Respostas que ficaram de fora, agrupadas por motivo ("sem “Data” válida") */
+    skippedResponses: { reason: string; count: number }[];
+}
+
 // ============================================================================
 // Tipos de Contexto
 // ============================================================================
@@ -212,6 +221,7 @@ export interface SheetData {
  */
 export interface DataContextValue {
     records: CampaignRecord[];
+    issues: DataIssues;
     loading: boolean;
     error: Error | null;
     refetch: () => Promise<void>;

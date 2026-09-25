@@ -16,11 +16,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { Dashboard } from './Dashboard';
 import { DataProvider } from '../contexts/DataContext';
 import { FilterProvider } from '../contexts/FilterContext';
-import type { CampaignRecord } from '../types';
+import type { CampaignRecord, DataIssues } from '../types';
 
 // Cria funções mock no nível do módulo
 const mockFetchData = vi.fn();
 const mockParse = vi.fn((data) => data);
+const mockGetIssues = vi.fn((): DataIssues => ({ missingColumns: [], skippedResponses: [] }));
 
 // Mock do módulo de serviços
 vi.mock('../services', () => ({
@@ -32,8 +33,9 @@ vi.mock('../services', () => ({
 // Mock do DataParser como construtor de classe
 vi.mock('../utils/DataParser', () => {
     return {
-        DataParser: vi.fn(function (this: { parse: typeof mockParse }) {
+        DataParser: vi.fn(function (this: { parse: typeof mockParse; getIssues: typeof mockGetIssues }) {
             this.parse = mockParse;
+            this.getIssues = mockGetIssues;
         })
     };
 });
@@ -121,7 +123,6 @@ describe('Componente Dashboard', () => {
                 csrCSAMap: {},
                 state: 'SP',
                 city: 'São Paulo',
-                neighborhood: 'Centro',
                 activityDate: new Date('2024-01-15'),
                 activityTime: '14:00',
                 serviceStructure: 'Sub-comitê',
@@ -176,6 +177,24 @@ describe('Componente Dashboard', () => {
 
         // Verifica se a tabela de materiais foi renderizada
         expect(screen.getByText(/Materiais Distribuídos/i)).toBeInTheDocument();
+
+        // Planilha sem problemas não mostra aviso
+        expect(screen.queryByText(/Parte dos dados da planilha/i)).not.toBeInTheDocument();
+    });
+
+    it('avisa o que da planilha ficou de fora do painel', async () => {
+        mockFetchData.mockResolvedValue({ rows: [], locale: 'pt_BR' });
+        mockGetIssues.mockReturnValueOnce({
+            missingColumns: ['Pasta RP - apenas número'],
+            skippedResponses: [{ reason: 'sem “Data” válida', count: 2 }]
+        });
+
+        renderDashboard();
+
+        expect(await screen.findByText(/Parte dos dados da planilha não aparece no painel/i)).toBeInTheDocument();
+        expect(screen.getByText('2 respostas ficaram de fora dos números:')).toBeInTheDocument();
+        expect(screen.getByText('2 respostas sem “Data” válida')).toBeInTheDocument();
+        expect(screen.getByText('“Pasta RP - apenas número”')).toBeInTheDocument();
     });
 
     it('deve ter classes de layout responsivo', async () => {

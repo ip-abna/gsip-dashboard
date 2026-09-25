@@ -16,11 +16,13 @@ import type {
     ServiceStructure,
     ActivityFormat,
     CSRCSAMap,
-    MaterialsDistributed
+    MaterialsDistributed,
+    DataIssues
 } from '../types';
 
 /**
- * Classe de erro customizada para erros de parsing de dados
+ * Erro de parsing. Quando descarta uma resposta, a mensagem completa a frase
+ * "N respostas …" do aviso do painel (ex.: "sem “Data” válida").
  */
 export class DataParseError extends Error {
     public readonly rowId?: string;
@@ -114,8 +116,10 @@ function byColumnKey(row: RawSheetRow): RawSheetRow {
  * Classe DataParser para transformar dados brutos da planilha
  */
 export class DataParser {
-    private warnings: string[] = [];
     private readonly monthFirst: boolean;
+    /** Colunas que o parser procurou (chave → título), para achar as que sumiram */
+    private requestedColumns = new Map<string, string>();
+    private issues: DataIssues = { missingColumns: [], skippedResponses: [] };
 
     /**
      * @param sheetLocale Localidade da planilha (ex.: "pt_BR"), que a API informa
@@ -125,45 +129,39 @@ export class DataParser {
     }
 
     /**
-     * Processa linhas brutas da planilha em objetos CampaignRecord tipados
-     * Ignora registros inválidos e registra avisos
+     * Processa linhas brutas da planilha em objetos CampaignRecord tipados.
+     * Respostas inválidas ficam de fora, e o motivo vai para getIssues().
      */
     parse(rows: RawSheetRow[]): CampaignRecord[] {
-        this.warnings = [];
+        this.requestedColumns.clear();
+        this.issues = { missingColumns: [], skippedResponses: [] };
         const records: CampaignRecord[] = [];
 
         if (rows.length === 0) {
-            console.warn('DataParser: Nenhuma linha para processar');
             return records;
         }
 
-        // Valida o schema
-        try {
-            this.validateSchema(rows);
-        } catch (error) {
-            console.error('DataParser: Falha na validação do schema', error);
-            throw error;
-        }
+        this.validateSchema(rows);
 
-        // Processa cada linha
+        const skipped = new Map<string, number>();
         for (const row of rows) {
             try {
-                const record = this.parseRow(row);
-                records.push(record);
+                records.push(this.parseRow(row));
             } catch (error) {
-                const rowId = this.getString(byColumnKey(row), 'ID_Resposta') || 'desconhecido';
-                const message = error instanceof Error ? error.message : String(error);
-                this.warnings.push(`Registro ${rowId}: ${message}`);
-                console.warn(`DataParser: Ignorando linha inválida ${rowId}`, error);
+                const reason = error instanceof Error ? error.message : String(error);
+                skipped.set(reason, (skipped.get(reason) ?? 0) + 1);
             }
         }
 
-        // Registra resumo se houver avisos
-        if (this.warnings.length > 0) {
-            console.warn(
-                `DataParser: ${this.warnings.length} registro(s) foram ignorados devido a dados inválidos.`
-            );
-        }
+        // Toda linha tem os mesmos cabeçalhos (os da aba), então a primeira basta
+        const present = byColumnKey(rows[0]);
+        this.issues = {
+            // ID_Resposta vem do script da planilha, não do formulário: faltar não é pergunta sumida
+            missingColumns: [...this.requestedColumns]
+                .filter(([key]) => !(key in present) && key !== columnKey('ID_Resposta'))
+                .map(([, title]) => title),
+            skippedResponses: [...skipped].map(([reason, count]) => ({ reason, count }))
+        };
 
         return records;
     }
@@ -184,7 +182,7 @@ export class DataParser {
         // Processa todos os campos com tratamento de erro apropriado
         const timestamp = this.parseDate(this.cell(row, 'Carimbo de data/hora'));
         if (!timestamp) {
-            throw new DataParseError('Timestamp inválido', responseId ?? undefined, 'Carimbo de data/hora');
+            throw new DataParseError('sem “Carimbo de data/hora” válido', responseId ?? undefined, 'Carimbo de data/hora');
         }
 
         // ponytail: dois envios no mesmo segundo colidiriam. O id não é usado
@@ -199,32 +197,33 @@ export class DataParser {
 
         // Valida o estado
         if (!state || !BRAZILIAN_STATES.includes(state as typeof BRAZILIAN_STATES[number])) {
-            throw new DataParseError(`Estado inválido: ${stateRaw}`, id, 'Selecione o Estado');
+            throw new DataParseError(`com o estado “${stateRaw}”, que o painel não reconhece`, id, 'Selecione o Estado');
         }
 
         // Processa o mapeamento CSR/CSA
         const csrCSAMap = this.parseCSRCSAMap(row);
 
-        // Processa cidade/bairro condicionais baseados no estado
+        // Processa a cidade condicional baseada no estado
         const city = this.parseConditionalCity(row, state);
-        const neighborhood = this.parseConditionalNeighborhood(row, state);
 
         // Processa a data da atividade
         const activityDate = this.parseDate(this.cell(row, 'Data'));
         if (!activityDate) {
-            throw new DataParseError('Data da atividade inválida', id, 'Data');
+            throw new DataParseError('sem “Data” válida', id, 'Data');
         }
 
         // Processa a estrutura de serviço
-        const serviceStructure = this.parseServiceStructure(this.cell(row, 'Qual Estrutura Prestou Atividade'));
+        const structureRaw = this.cell(row, 'Qual Estrutura Prestou Atividade');
+        const serviceStructure = this.parseServiceStructure(structureRaw);
         if (!serviceStructure) {
-            throw new DataParseError('Estrutura de serviço inválida', id, 'Qual Estrutura Prestou Atividade');
+            throw this.unknownOption('Qual Estrutura Prestou Atividade', structureRaw, id);
         }
 
         // Processa o formato da atividade
-        const activityFormat = this.parseActivityFormat(this.cell(row, 'Formato do Atendimento'));
+        const formatRaw = this.cell(row, 'Formato do Atendimento');
+        const activityFormat = this.parseActivityFormat(formatRaw);
         if (!activityFormat) {
-            throw new DataParseError('Formato de atividade inválido', id, 'Formato do Atendimento');
+            throw this.unknownOption('Formato do Atendimento', formatRaw, id);
         }
 
         // Processa os materiais
@@ -242,7 +241,6 @@ export class DataParser {
             csrCSAMap,
             state,
             city,
-            neighborhood,
             activityDate,
             activityTime: this.getString(row, 'Horário') || '',
             serviceStructure,
@@ -310,10 +308,10 @@ export class DataParser {
     }
 
     /**
-     * Retorna os avisos da última operação de parsing
+     * O que a última chamada de parse() não conseguiu levar ao painel
      */
-    getWarnings(): string[] {
-        return [...this.warnings];
+    getIssues(): DataIssues {
+        return this.issues;
     }
 
     // ========================================================================
@@ -344,9 +342,24 @@ export class DataParser {
 
         if (missingColumns.length > 0) {
             throw new DataParseError(
-                `Colunas obrigatórias ausentes: ${missingColumns.join(', ')}`
+                `A planilha não tem ${missingColumns.length === 1 ? 'a pergunta' : 'as perguntas'} ` +
+                `${missingColumns.map(col => `“${col}”`).join(', ')}, e o painel não funciona sem ` +
+                `${missingColumns.length === 1 ? 'ela' : 'elas'}. Se alguém mudou o texto no formulário, ` +
+                'volte o texto antigo ou peça a quem cuida do painel para ajustá-lo.'
             );
         }
+    }
+
+    /**
+     * Erro de uma resposta com uma opção que o painel não conhece (ex.: alguém
+     * criou a opção "Remoto" no formulário) ou sem resposta nessa pergunta
+     */
+    private unknownOption(column: string, raw: unknown, id: string): DataParseError {
+        const value = raw === null || raw === undefined ? '' : String(raw).trim();
+        const reason = value
+            ? `com a opção “${value}” em “${column}”, que o painel não conhece`
+            : `sem “${column}”`;
+        return new DataParseError(reason, id, column);
     }
 
     /**
@@ -377,7 +390,7 @@ export class DataParser {
     private getRequiredString(row: RawSheetRow, field: string): string {
         const value = this.cell(row, field);
         if (value === null || value === undefined || value === '') {
-            throw new DataParseError(`Campo obrigatório ausente: ${field}`);
+            throw new DataParseError(`sem “${field}”`);
         }
         return String(value).trim();
     }
@@ -397,7 +410,9 @@ export class DataParser {
      * Lê uma coluna pelo título da pergunta, numa linha já passada por byColumnKey
      */
     private cell(row: RawSheetRow, column: string): string | number | null | undefined {
-        return row[columnKey(column)];
+        const key = columnKey(column);
+        this.requestedColumns.set(key, column);
+        return row[key];
     }
 
     /**
@@ -540,54 +555,8 @@ export class DataParser {
      * Processa a coluna condicional de cidade baseada no estado selecionado
      */
     private parseConditionalCity(row: RawSheetRow, state: string): string | null {
-        // Tenta correspondência exata primeiro
-        const exactColumn = `Selecione a cidade - ${state}`;
-        let value = this.getString(row, exactColumn);
-
-        if (value) {
-            return value;
-        }
-
-        // Tenta variações com colchetes
-        const bracketColumn = `Selecione a cidade - [${state}]`;
-        value = this.getString(row, bracketColumn);
-
-        if (value) {
-            return value;
-        }
-
-        // Tenta sem hífen
-        const noDashColumn = `Selecione a cidade ${state}`;
-        value = this.getString(row, noDashColumn);
-
-        return value;
-    }
-
-    /**
-     * Processa a coluna condicional de bairro baseada no estado selecionado
-     */
-    private parseConditionalNeighborhood(row: RawSheetRow, state: string): string | null {
-        // Tenta correspondência exata primeiro
-        const exactColumn = `Qual o bairro? (${state})`;
-        let value = this.getString(row, exactColumn);
-
-        if (value) {
-            return value;
-        }
-
-        // Tenta variações com colchetes
-        const bracketColumn = `Qual o bairro? [${state}]`;
-        value = this.getString(row, bracketColumn);
-
-        if (value) {
-            return value;
-        }
-
-        // Tenta sem parênteses
-        const noParenColumn = `Qual o bairro? ${state}`;
-        value = this.getString(row, noParenColumn);
-
-        return value;
+        // Uma pergunta de cidade por estado; columnKey já cobre "Cidade" com C maiúsculo
+        return this.getString(row, `Selecione a cidade - ${state}`);
     }
 
     /**

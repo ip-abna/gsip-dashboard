@@ -26,7 +26,6 @@ function createMockRecord(overrides: Partial<CampaignRecord> = {}): CampaignReco
         csrCSAMap: {},
         state: 'SP',
         city: 'São Paulo',
-        neighborhood: 'Centro',
         activityDate: new Date('2024-01-15'),
         activityTime: '14:00',
         serviceStructure: 'Sub-comitê',

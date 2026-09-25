@@ -14,7 +14,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../contexts';
-import { Header, CategoryBarChart, SummaryCard, CSRPillNav } from '../components';
+import { Header, CategoryBarChart, SummaryCard, CSRPillNav, DataIssuesNotice } from '../components';
 import {
     rankCSRsByActivityCount,
     rankCSRsByAudienceReached,
@@ -75,6 +75,8 @@ export function CSROverviewPage() {
                 <Header />
 
                 <main className="container mx-auto px-4 py-6 space-y-6 animate-fade-in-up">
+                    <DataIssuesNotice />
+
                     {/* Breadcrumb / voltar ao dashboard */}
                     <nav className="flex items-center gap-2 text-sm text-ink-500">
                         <Link to="/" className="font-medium text-abna-primary hover:underline">

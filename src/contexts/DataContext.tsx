@@ -11,7 +11,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { CampaignRecord, DataContextValue } from '../types';
+import type { CampaignRecord, DataContextValue, DataIssues } from '../types';
 import { createGoogleSheetsService } from '../services';
 import { DataParser } from '../utils/DataParser';
 
@@ -19,6 +19,8 @@ import { DataParser } from '../utils/DataParser';
 const CACHE_KEY = 'abna_campaign_data_cache';
 const CACHE_TIMESTAMP_KEY = 'abna_campaign_data_cache_timestamp';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos em milissegundos
+
+const NO_ISSUES: DataIssues = { missingColumns: [], skippedResponses: [] };
 
 /**
  * Cria o DataContext com valor padrão undefined
@@ -38,6 +40,7 @@ interface DataProviderProps {
  */
 export function DataProvider({ children }: DataProviderProps) {
     const [records, setRecords] = useState<CampaignRecord[]>([]);
+    const [issues, setIssues] = useState<DataIssues>(NO_ISSUES);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
 
@@ -116,6 +119,7 @@ export function DataProvider({ children }: DataProviderProps) {
 
             // Atualiza o estado
             setRecords(parsedRecords);
+            setIssues(parser.getIssues());
             setError(null);
 
             // Salva os dados em cache
@@ -171,6 +175,7 @@ export function DataProvider({ children }: DataProviderProps) {
     // Valor do contexto
     const value: DataContextValue = {
         records,
+        issues,
         loading,
         error,
         refetch
