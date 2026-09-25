@@ -66,6 +66,28 @@ describe('parseRow', () => {
     it('preserva o ID_Resposta quando ele existe', () => {
         expect(parser.parseRow(makeRow()).id).toBe('abc-123');
     });
+
+    // Cabeçalhos reais da planilha, que diferem do título "limpo" da pergunta
+    it('acha a coluna mesmo com espaço duplo no cabeçalho', () => {
+        const record = parser.parseRow(makeRow({ 'Pasta RP  - apenas número': '1' }));
+        expect(record.materials.pastaRP).toBe(1);
+    });
+
+    it('acha a coluna mesmo com maiúsculas diferentes no cabeçalho', () => {
+        const record = parser.parseRow(makeRow({
+            'Selecione o Estado': 'Amapá (AP)',
+            'Selecione a Cidade - AP': 'Macapá'
+        }));
+        expect(record.city).toBe('Macapá');
+    });
+
+    it('fica com o valor preenchido quando dois cabeçalhos só diferem na caixa', () => {
+        const record = parser.parseRow(makeRow({
+            'Selecione a cidade - PR': 'Curitiba',
+            'Selecione a Cidade - PR': ''
+        }));
+        expect(record.city).toBe('Curitiba');
+    });
 });
 
 describe('parse', () => {

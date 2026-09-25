@@ -68,6 +68,32 @@ const CSR_NAMES = [
 ] as const;
 
 /**
+ * O cabeçalho da planilha é o título da pergunta no formulário, e quem edita o
+ * formulário muda maiúsculas e espaços sem perceber ("Pasta RP  - apenas número",
+ * "Selecione a Cidade - AP"). As colunas são procuradas por esta chave, que ignora
+ * essas diferenças.
+ */
+function columnKey(header: string): string {
+    return header.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * Reindexa a linha pela chave de coluna. Se dois cabeçalhos caem na mesma chave,
+ * fica o que tem valor: cada resposta preenche só uma das duas perguntas.
+ */
+function byColumnKey(row: RawSheetRow): RawSheetRow {
+    const keyed: RawSheetRow = {};
+    for (const [header, value] of Object.entries(row)) {
+        const key = columnKey(header);
+        const current = keyed[key];
+        if (current === undefined || current === null || current === '') {
+            keyed[key] = value;
+        }
+    }
+    return keyed;
+}
+
+/**
  * Classe DataParser para transformar dados brutos da planilha
  */
 export class DataParser {
@@ -100,7 +126,7 @@ export class DataParser {
                 const record = this.parseRow(row);
                 records.push(record);
             } catch (error) {
-                const rowId = row['ID_Resposta'] as string || 'desconhecido';
+                const rowId = this.getString(byColumnKey(row), 'ID_Resposta') || 'desconhecido';
                 const message = error instanceof Error ? error.message : String(error);
                 this.warnings.push(`Registro ${rowId}: ${message}`);
                 console.warn(`DataParser: Ignorando linha inválida ${rowId}`, error);
@@ -121,7 +147,9 @@ export class DataParser {
      * Processa uma única linha em um CampaignRecord
      * @throws {DataParseError} Se campos obrigatórios estiverem ausentes ou inválidos
      */
-    parseRow(row: RawSheetRow): CampaignRecord {
+    parseRow(sheetRow: RawSheetRow): CampaignRecord {
+        const row = byColumnKey(sheetRow);
+
         // O ID_Resposta não vem do formulário: é preenchido por um script na
         // planilha, que chega vazio nas respostas mais recentes. Como ele não
         // identifica nada na interface, uma resposta válida nunca deve ser
@@ -129,7 +157,7 @@ export class DataParser {
         const responseId = this.getString(row, 'ID_Resposta');
 
         // Processa todos os campos com tratamento de erro apropriado
-        const timestamp = this.parseDate(row['Carimbo de data/hora']);
+        const timestamp = this.parseDate(this.cell(row, 'Carimbo de data/hora'));
         if (!timestamp) {
             throw new DataParseError('Timestamp inválido', responseId ?? undefined, 'Carimbo de data/hora');
         }
@@ -157,19 +185,19 @@ export class DataParser {
         const neighborhood = this.parseConditionalNeighborhood(row, state);
 
         // Processa a data da atividade
-        const activityDate = this.parseDate(row['Data']);
+        const activityDate = this.parseDate(this.cell(row, 'Data'));
         if (!activityDate) {
             throw new DataParseError('Data da atividade inválida', id, 'Data');
         }
 
         // Processa a estrutura de serviço
-        const serviceStructure = this.parseServiceStructure(row['Qual Estrutura Prestou Atividade']);
+        const serviceStructure = this.parseServiceStructure(this.cell(row, 'Qual Estrutura Prestou Atividade'));
         if (!serviceStructure) {
             throw new DataParseError('Estrutura de serviço inválida', id, 'Qual Estrutura Prestou Atividade');
         }
 
         // Processa o formato da atividade
-        const activityFormat = this.parseActivityFormat(row['Formato do Atendimento']);
+        const activityFormat = this.parseActivityFormat(this.cell(row, 'Formato do Atendimento'));
         if (!activityFormat) {
             throw new DataParseError('Formato de atividade inválido', id, 'Formato do Atendimento');
         }
@@ -197,10 +225,10 @@ export class DataParser {
             institution: this.getString(row, 'Nome da Instituição / Grupo') || '',
             activityType: this.getString(row, 'Tipo de Atividade') || '',
             activityDescription: this.getString(row, 'Qual atividade realizada?') || '',
-            speakersCount: this.parseNumber(row['Quantidade de Oradores/Servidores']) || 0,
-            participantsCount: this.parseNumber(row['Quantidade de Participantes']) || 0,
-            audienceReached: this.parseNumber(row['Quantidade de Público Atingido']) || 0,
-            serviceCost: this.parseNumber(row['Custo do Serviço']) || 0,
+            speakersCount: this.parseNumber(this.cell(row, 'Quantidade de Oradores/Servidores')) || 0,
+            participantsCount: this.parseNumber(this.cell(row, 'Quantidade de Participantes')) || 0,
+            audienceReached: this.parseNumber(this.cell(row, 'Quantidade de Público Atingido')) || 0,
+            serviceCost: this.parseNumber(this.cell(row, 'Custo do Serviço')) || 0,
             materials,
             observations: this.getString(row, 'Alguma observação?') || ''
         };
@@ -286,8 +314,8 @@ export class DataParser {
             throw new DataParseError('Planilha vazia ou sem dados');
         }
 
-        const firstRow = rows[0];
-        const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+        const firstRow = byColumnKey(rows[0]);
+        const missingColumns = requiredColumns.filter(col => !(columnKey(col) in firstRow));
 
         if (missingColumns.length > 0) {
             throw new DataParseError(
@@ -322,7 +350,7 @@ export class DataParser {
      * Obtém um campo string obrigatório, lança erro se ausente
      */
     private getRequiredString(row: RawSheetRow, field: string): string {
-        const value = row[field];
+        const value = this.cell(row, field);
         if (value === null || value === undefined || value === '') {
             throw new DataParseError(`Campo obrigatório ausente: ${field}`);
         }
@@ -333,11 +361,18 @@ export class DataParser {
      * Obtém um campo string opcional
      */
     private getString(row: RawSheetRow, field: string): string | null {
-        const value = row[field];
+        const value = this.cell(row, field);
         if (value === null || value === undefined || value === '') {
             return null;
         }
         return String(value).trim();
+    }
+
+    /**
+     * Lê uma coluna pelo título da pergunta, numa linha já passada por byColumnKey
+     */
+    private cell(row: RawSheetRow, column: string): string | number | null | undefined {
+        return row[columnKey(column)];
     }
 
     /**
@@ -534,18 +569,18 @@ export class DataParser {
      */
     private parseMaterials(row: RawSheetRow): MaterialsDistributed {
         return {
-            cartazes: this.parseNumber(row['Cartazes - apenas número']) || 0,
-            panfletos: this.parseNumber(row['Panfletos - apenas número']) || 0,
-            listaGrupos: this.parseNumber(row['Lista de Grupos - apenas número']) || 0,
-            cartao: this.parseNumber(row['Cartão - apenas número']) || 0,
-            folder: this.parseNumber(row['Folder - apenas número']) || 0,
-            ips: this.parseNumber(row['IPs - Folhetos - apenas número']) || 0,
-            folhetos: this.parseNumber(row['Folhetos - apenas número']) || 0,
-            textoBasico: this.parseNumber(row['Texto Básico - apenas número']) || 0,
-            pastaRP: this.parseNumber(row['Pasta RP - apenas número']) || 0,
-            lixoCar: this.parseNumber(row['Lixo Car - apenas número']) || 0,
-            calendario: this.parseNumber(row['Calendário - apenas número']) || 0,
-            outros: this.parseNumber(row['Outros Materiais']) || 0
+            cartazes: this.parseNumber(this.cell(row, 'Cartazes - apenas número')) || 0,
+            panfletos: this.parseNumber(this.cell(row, 'Panfletos - apenas número')) || 0,
+            listaGrupos: this.parseNumber(this.cell(row, 'Lista de Grupos - apenas número')) || 0,
+            cartao: this.parseNumber(this.cell(row, 'Cartão - apenas número')) || 0,
+            folder: this.parseNumber(this.cell(row, 'Folder - apenas número')) || 0,
+            ips: this.parseNumber(this.cell(row, 'IPs - Folhetos - apenas número')) || 0,
+            folhetos: this.parseNumber(this.cell(row, 'Folhetos - apenas número')) || 0,
+            textoBasico: this.parseNumber(this.cell(row, 'Texto Básico - apenas número')) || 0,
+            pastaRP: this.parseNumber(this.cell(row, 'Pasta RP - apenas número')) || 0,
+            lixoCar: this.parseNumber(this.cell(row, 'Lixo Car - apenas número')) || 0,
+            calendario: this.parseNumber(this.cell(row, 'Calendário - apenas número')) || 0,
+            outros: this.parseNumber(this.cell(row, 'Outros Materiais')) || 0
         };
     }
 }
