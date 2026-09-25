@@ -6,7 +6,39 @@
  * de erros e mensagens de erro descritivas.
  */
 
-import type { GoogleSheetsConfig, RawSheetRow } from '../types';
+import type { GoogleSheetsConfig, RawSheetRow, SheetData } from '../types';
+
+/**
+ * Só os campos da planilha que o painel pede à API (fields=...)
+ */
+interface SpreadsheetMeta {
+    properties?: { locale?: string };
+    sheets?: { properties: { title: string } }[];
+}
+
+/**
+ * Aba que o Google cria ao vincular um formulário: "Respostas ao formulário 4",
+ * ou "Form Responses 4" se quem vinculou usa o Google em inglês
+ */
+const FORM_RESPONSES_TAB = /^(respostas ao formulário|form responses)\s+(\d+)$/i;
+
+/**
+ * Escolhe a aba de respostas mais nova. Ao vincular um formulário, o Google copia
+ * todas as respostas que o formulário guarda para uma aba nova, e as abas antigas
+ * param de receber respostas. A de número maior é sempre a completa.
+ */
+export function newestResponsesTab(titles: string[]): string | null {
+    let newest: string | null = null;
+    let highest = -1;
+    for (const title of titles) {
+        const match = title.trim().match(FORM_RESPONSES_TAB);
+        if (match && Number(match[2]) > highest) {
+            highest = Number(match[2]);
+            newest = title;
+        }
+    }
+    return newest;
+}
 
 /**
  * Classe de erro customizada para erros da API do Google Sheets
@@ -44,91 +76,88 @@ export class GoogleSheetsService {
      * @throws {GoogleSheetsError} Se a configuração for inválida
      */
     validateConfig(): void {
-        const { apiKey, spreadsheetId, range } = this.config;
+        const { apiKey, spreadsheetId } = this.config;
 
         if (!apiKey || apiKey.trim() === '') {
             throw new GoogleSheetsError(
-                'A chave da API é obrigatória. Defina VITE_GOOGLE_SHEETS_API_KEY no seu arquivo .env.'
+                'A chave da API está vazia. Preencha DEFAULT_API_KEY em src/services/GoogleSheetsService.ts.'
             );
         }
 
         if (!spreadsheetId || spreadsheetId.trim() === '') {
             throw new GoogleSheetsError(
-                'O ID da planilha é obrigatório. Defina VITE_GOOGLE_SHEETS_SPREADSHEET_ID no seu arquivo .env.'
-            );
-        }
-
-        if (!range || range.trim() === '') {
-            throw new GoogleSheetsError(
-                'O intervalo é obrigatório. Defina VITE_GOOGLE_SHEETS_RANGE no seu arquivo .env.'
+                'O ID da planilha está vazio. Preencha DEFAULT_SPREADSHEET_ID em src/services/GoogleSheetsService.ts.'
             );
         }
 
         // Validação básica do formato da chave da API
         if (apiKey.length < 20) {
             throw new GoogleSheetsError(
-                'A chave da API parece ser inválida. Verifique VITE_GOOGLE_SHEETS_API_KEY.'
+                'A chave da API está incompleta. Confira DEFAULT_API_KEY em src/services/GoogleSheetsService.ts.'
             );
         }
     }
 
     /**
-     * Busca dados da API do Google Sheets
-     * @returns Promise que resolve para um array de linhas brutas da planilha
-     * @throws {GoogleSheetsError} Se a busca falhar ou a API retornar um erro
+     * Busca as respostas do formulário na aba de respostas mais nova da planilha
+     * @throws {GoogleSheetsError} Se a busca falhar, a API retornar um erro ou a
+     * planilha não tiver aba de respostas
      */
-    async fetchData(): Promise<RawSheetRow[]> {
-        const { spreadsheetId, range, apiKey } = this.config;
-        // O range precisa ser codificado: nomes de aba com espaços/acentos
-        // (ex.: "Respostas ao formulário 4") quebram a URL sem encode.
-        const url = `${this.baseUrl}/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+    async fetchData(): Promise<SheetData> {
+        const { spreadsheetId, apiKey } = this.config;
+        const sheetUrl = `${this.baseUrl}/${spreadsheetId}`;
 
-        try {
-            const response = await fetch(url);
-
-            // Trata erros HTTP
-            if (!response.ok) {
-                const errorData = await this.parseErrorResponse(response);
-                throw new GoogleSheetsError(
-                    this.getErrorMessage(response.status, errorData),
-                    response.status,
-                    errorData
-                );
-            }
-
-            const data = await response.json();
-
-            // Valida a estrutura da resposta
-            if (!data.values || !Array.isArray(data.values)) {
-                throw new GoogleSheetsError(
-                    'Resposta da API inválida: dados não encontrados.'
-                );
-            }
-
-            // Converte para o formato RawSheetRow
-            return this.transformToRows(data.values);
-        } catch (error) {
-            // Re-lança GoogleSheetsError como está
-            if (error instanceof GoogleSheetsError) {
-                throw error;
-            }
-
-            // Trata erros de rede
-            if (error instanceof TypeError && error.message.includes('fetch')) {
-                throw new GoogleSheetsError(
-                    'Erro de rede: não foi possível conectar à API do Google Sheets. Verifique sua conexão com a internet.',
-                    undefined,
-                    error
-                );
-            }
-
-            // Trata outros erros inesperados
+        const meta = await this.getJson<SpreadsheetMeta>(
+            `${sheetUrl}?fields=properties.locale,sheets.properties.title&key=${apiKey}`
+        );
+        const tab = newestResponsesTab((meta.sheets ?? []).map(sheet => sheet.properties.title));
+        if (!tab) {
             throw new GoogleSheetsError(
-                'Erro inesperado ao buscar dados: ' + (error instanceof Error ? error.message : String(error)),
+                'A planilha não tem uma aba de respostas do formulário (como "Respostas ao formulário 1"). ' +
+                'Para criar, abra o formulário, vá em Respostas → Vincular ao Planilhas e escolha esta planilha.'
+            );
+        }
+
+        // Aba entre aspas simples (notação A1) e codificada: espaços e acentos
+        // quebrariam o intervalo e a URL
+        const range = encodeURIComponent(`'${tab.replace(/'/g, "''")}'`);
+        const data = await this.getJson<{ values?: unknown[][] }>(
+            `${sheetUrl}/values/${range}?key=${apiKey}`
+        );
+
+        return {
+            // Aba vazia (sem respostas ainda) chega sem "values"
+            rows: this.transformToRows(data.values ?? []),
+            locale: meta.properties?.locale ?? 'pt_BR'
+        };
+    }
+
+    /**
+     * GET na API do Google Sheets, com os erros traduzidos em GoogleSheetsError
+     */
+    private async getJson<T>(url: string): Promise<T> {
+        let response: Response;
+        try {
+            response = await fetch(url);
+        } catch (error) {
+            // fetch só rejeita quando a requisição nem chega ao Google
+            throw new GoogleSheetsError(
+                'Erro de rede: não foi possível conectar à API do Google Sheets. Verifique sua conexão com a internet.',
                 undefined,
                 error
             );
         }
+
+        if (!response.ok) {
+            const errorData = await this.parseErrorResponse(response);
+            throw new GoogleSheetsError(
+                this.getErrorMessage(response.status, errorData),
+                response.status,
+                errorData
+            );
+        }
+
+        return response.json();
     }
 
     /**
@@ -148,11 +177,13 @@ export class GoogleSheetsService {
     private getErrorMessage(statusCode: number, errorData: unknown): string {
         switch (statusCode) {
             case 400:
-                return 'Requisição inválida: verifique a configuração do intervalo da planilha (VITE_GOOGLE_SHEETS_RANGE).';
+                return `O Google recusou a requisição (${this.extractErrorMessage(errorData)}). ` +
+                    'Confira a chave em DEFAULT_API_KEY, em src/services/GoogleSheetsService.ts.';
             case 403:
-                return 'Acesso negado: verifique se a chave da API está correta e tem permissões adequadas. A planilha deve estar configurada como "Qualquer pessoa com o link pode visualizar".';
+                return 'O Google negou o acesso à planilha. A chave da API não aceita este endereço, ' +
+                    'ou a planilha não está pública (Compartilhar → Qualquer pessoa com o link → Leitor).';
             case 404:
-                return 'Planilha não encontrada: verifique se o ID da planilha (VITE_GOOGLE_SHEETS_SPREADSHEET_ID) está correto.';
+                return 'Planilha não encontrada. Confira o ID em DEFAULT_SPREADSHEET_ID, em src/services/GoogleSheetsService.ts.';
             case 429:
                 return 'Limite de requisições excedido: aguarde alguns minutos antes de tentar novamente.';
             case 500:
@@ -240,14 +271,12 @@ export class GoogleSheetsService {
 /**
  * Valores de produção — o deploy não usa GitHub Secrets. A chave é uma API key
  * PÚBLICA do Google (vai no bundle de qualquer jeito); quem a protege é a restrição
- * por referenciador HTTP no Google Cloud (veja DEPLOYMENT.md). Para trocar a chave,
- * a planilha ou a aba, edite aqui. Um .env local só sobrepõe estes valores.
+ * por referenciador HTTP no Google Cloud (veja DEPLOYMENT.md). Para trocar a chave
+ * ou a planilha, edite aqui. A aba não se configura: o painel acha sozinho a aba de
+ * respostas mais nova (newestResponsesTab). Um .env local só sobrepõe estes valores.
  */
 const DEFAULT_API_KEY = 'AIzaSyDdBdySPffBf1bndFpnEZaje0C1kN8wm4o';
 const DEFAULT_SPREADSHEET_ID = '1X_NnjQTEWJ8Se9Anm5CvD5BIGdjKo5BadYEqnxPnLKY';
-// Só o nome da aba, sem limite de colunas: pergunta nova no formulário vira coluna
-// nova no fim da aba, e um limite como A:CS cortaria essa coluna sem dar erro.
-const DEFAULT_RANGE = 'Respostas ao formulário 4';
 
 /**
  * Função factory para criar GoogleSheetsService a partir de variáveis de ambiente
@@ -255,8 +284,7 @@ const DEFAULT_RANGE = 'Respostas ao formulário 4';
 export function createGoogleSheetsService(): GoogleSheetsService {
     const config: GoogleSheetsConfig = {
         apiKey: import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || DEFAULT_API_KEY,
-        spreadsheetId: import.meta.env.VITE_GOOGLE_SHEETS_SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID,
-        range: import.meta.env.VITE_GOOGLE_SHEETS_RANGE || DEFAULT_RANGE
+        spreadsheetId: import.meta.env.VITE_GOOGLE_SHEETS_SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID
     };
 
     return new GoogleSheetsService(config);

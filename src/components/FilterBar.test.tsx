@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FilterBar } from './FilterBar';
 import { FilterProvider } from '../contexts/FilterContext';
 import { DataProvider } from '../contexts/DataContext';
+
+// Sem isto o DataProvider chamaria a API real do Google a cada teste
+vi.mock('../services', () => ({
+    createGoogleSheetsService: () => ({
+        fetchData: () => Promise.resolve({ rows: [], locale: 'pt_BR' })
+    })
+}));
 
 // Função auxiliar para renderizar FilterBar com providers necessários
 function renderFilterBar() {

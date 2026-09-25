@@ -108,7 +108,7 @@ describe('DataContext', () => {
             }
         ];
 
-        const mockFetchData = vi.fn().mockResolvedValue([{ id: '1' }]);
+        const mockFetchData = vi.fn().mockResolvedValue({ rows: [{ id: '1' }], locale: 'pt_BR' });
         const mockParse = vi.fn().mockReturnValue(mockRecords);
 
         vi.mocked(services.createGoogleSheetsService).mockReturnValue({

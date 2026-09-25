@@ -108,11 +108,11 @@ export function DataProvider({ children }: DataProviderProps) {
             const service = createGoogleSheetsService();
             const parser = new DataParser();
 
-            // Busca dados brutos do Google Sheets
-            const rawData = await service.fetchData();
+            // Busca as respostas brutas do Google Sheets
+            const { rows } = await service.fetchData();
 
             // Converte dados brutos em objetos CampaignRecord
-            const parsedRecords = parser.parse(rawData);
+            const parsedRecords = parser.parse(rows);
 
             // Atualiza o estado
             setRecords(parsedRecords);

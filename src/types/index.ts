@@ -194,6 +194,15 @@ export interface RawSheetRow {
     [key: string]: string | number | null;
 }
 
+/**
+ * O que a planilha entrega ao painel: as respostas e a localidade (ex.: "pt_BR"),
+ * que decide a ordem de dia e mês nas datas
+ */
+export interface SheetData {
+    rows: RawSheetRow[];
+    locale: string;
+}
+
 // ============================================================================
 // Tipos de Contexto
 // ============================================================================
@@ -230,7 +239,6 @@ export interface FilterContextValue {
 export interface GoogleSheetsConfig {
     apiKey: string;
     spreadsheetId: string;
-    range: string;
 }
 
 // ============================================================================

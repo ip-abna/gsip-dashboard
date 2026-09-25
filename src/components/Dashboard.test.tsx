@@ -150,7 +150,7 @@ describe('Componente Dashboard', () => {
             }
         ];
 
-        mockFetchData.mockResolvedValue(mockData);
+        mockFetchData.mockResolvedValue({ rows: mockData, locale: 'pt_BR' });
         mockParse.mockReturnValue(mockData);
 
         renderDashboard();
@@ -179,7 +179,7 @@ describe('Componente Dashboard', () => {
     });
 
     it('deve ter classes de layout responsivo', async () => {
-        mockFetchData.mockResolvedValue([]);
+        mockFetchData.mockResolvedValue({ rows: [], locale: 'pt_BR' });
 
         const { container } = renderDashboard();
 
