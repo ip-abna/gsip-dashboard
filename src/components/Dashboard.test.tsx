@@ -25,7 +25,7 @@ const mockGetIssues = vi.fn((): DataIssues => ({ missingColumns: [], skippedResp
 
 // Mock do módulo de serviços
 vi.mock('../services', () => ({
-    createGoogleSheetsService: vi.fn(() => ({
+    createResponsesProxy: vi.fn(() => ({
         fetchData: mockFetchData
     }))
 }));

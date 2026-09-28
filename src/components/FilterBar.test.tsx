@@ -6,7 +6,7 @@ import { DataProvider } from '../contexts/DataContext';
 
 // Sem isto o DataProvider chamaria a API real do Google a cada teste
 vi.mock('../services', () => ({
-    createGoogleSheetsService: () => ({
+    createResponsesProxy: () => ({
         fetchData: () => Promise.resolve({ rows: [], locale: 'pt_BR' })
     })
 }));

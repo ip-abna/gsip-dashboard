@@ -129,6 +129,16 @@ describe('parse', () => {
         expect(parser.parse([semId])).toHaveLength(1);
         expect(parser.getIssues().missingColumns).not.toContain('ID_Resposta');
     });
+
+    it('não aponta Email, Nome e Telefone, que o proxy barra de propósito', () => {
+        // O proxy nunca entrega essas colunas (BLOCKED_COLUMNS em apps-script/Code.gs)
+        const parser = new DataParser();
+        parser.parse([makeRow()]);
+        const { missingColumns } = parser.getIssues();
+        expect(missingColumns).not.toContain('Email');
+        expect(missingColumns).not.toContain('Nome');
+        expect(missingColumns).not.toContain('Telefone');
+    });
 });
 
 describe('getIssues', () => {

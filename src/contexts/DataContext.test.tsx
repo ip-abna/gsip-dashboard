@@ -8,10 +8,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { DataProvider, useData } from './DataContext';
 import type { CampaignRecord } from '../types';
 import * as services from '../services';
-import type { GoogleSheetsService } from '../services/GoogleSheetsService';
 import * as utils from '../utils/DataParser';
 
-// Mock do GoogleSheetsService
+// Mock do proxy de respostas
 vi.mock('../services');
 
 // Mock do DataParser
@@ -50,11 +49,9 @@ describe('DataContext', () => {
     it('deve fornecer estado inicial de carregamento', () => {
         const mockFetchData = vi.fn(() => new Promise(() => { })); // Nunca resolve
 
-        vi.mocked(services.createGoogleSheetsService).mockReturnValue({
-            fetchData: mockFetchData,
-            validateConfig: vi.fn(),
-            getConfig: vi.fn()
-        } as unknown as GoogleSheetsService);
+        vi.mocked(services.createResponsesProxy).mockReturnValue({
+            fetchData: mockFetchData
+        });
 
         render(
             <DataProvider>
@@ -110,11 +107,9 @@ describe('DataContext', () => {
         const mockFetchData = vi.fn().mockResolvedValue({ rows: [{ id: '1' }], locale: 'pt_BR' });
         const mockParse = vi.fn().mockReturnValue(mockRecords);
 
-        vi.mocked(services.createGoogleSheetsService).mockReturnValue({
-            fetchData: mockFetchData,
-            validateConfig: vi.fn(),
-            getConfig: vi.fn()
-        } as unknown as GoogleSheetsService);
+        vi.mocked(services.createResponsesProxy).mockReturnValue({
+            fetchData: mockFetchData
+        });
 
         // Mock do DataParser como construtor
         vi.mocked(utils.DataParser).mockImplementation(function (this: { parse: typeof mockParse; getIssues: ReturnType<typeof vi.fn>; extractFilterOptions: ReturnType<typeof vi.fn> }) {
@@ -144,11 +139,9 @@ describe('DataContext', () => {
     it('deve tratar erros da API e exibir mensagem de erro', async () => {
         const mockFetchData = vi.fn().mockRejectedValue(new Error('Erro de rede'));
 
-        vi.mocked(services.createGoogleSheetsService).mockReturnValue({
-            fetchData: mockFetchData,
-            validateConfig: vi.fn(),
-            getConfig: vi.fn()
-        } as unknown as GoogleSheetsService);
+        vi.mocked(services.createResponsesProxy).mockReturnValue({
+            fetchData: mockFetchData
+        });
 
         // Mock do DataParser como construtor
         vi.mocked(utils.DataParser).mockImplementation(function (this: { parse: ReturnType<typeof vi.fn>; extractFilterOptions: ReturnType<typeof vi.fn> }) {

@@ -3,41 +3,17 @@
 O painel é um site estático. Cada push na `main` gera o build e publica em
 **https://ip-abna.github.io/gsip-dashboard/**.
 
-O deploy não usa segredos do GitHub para o Google Sheets. A chave da API e o ID da
-planilha ficam em `src/services/GoogleSheetsService.ts` (`DEFAULT_API_KEY` e
-`DEFAULT_SPREADSHEET_ID`). Esses valores vão no JavaScript do site de qualquer jeito.
-Quem protege a chave é a restrição por site no Google Cloud (passo 2).
+O deploy não usa segredos do GitHub e não tem chave de API. O painel lê as
+respostas através de um proxy (Apps Script) que roda dentro de uma planilha
+privada e publica só as colunas que o painel mostra, sem Email, Nome e Telefone.
+O endereço do proxy fica em `src/services/ResponsesProxy.ts` (`DEFAULT_PROXY_URL`)
+e o código do script em `apps-script/Code.gs`.
 
 ## 1. Ligar o GitHub Pages (uma vez)
 
 No repositório: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
-## 2. Criar a chave da API do Google (uma vez)
-
-A chave em uso fica no projeto `gs-ip-509623` do Google Cloud, na conta Google da ABNA.
-Para trocá-la, repita os passos abaixo nesse projeto. Use a conta da ABNA, não uma
-conta pessoal.
-
-1. Abra o [Google Cloud Console](https://console.cloud.google.com/).
-2. No seletor de projetos, no topo, escolha `gs-ip-509623`. Se for começar do zero,
-   crie um projeto (ex.: `gsip-dashboard`).
-3. Em **APIs e serviços → Biblioteca**, procure **Google Sheets API** e clique em **Ativar**.
-4. Em **APIs e serviços → Credenciais**, clique em **Criar credenciais → Chave de API**.
-5. Abra a chave criada e configure:
-   - **Restrições de aplicativos**: escolha **Sites** e adicione um item por linha:
-     - `https://ip-abna.github.io/*` (o site publicado)
-     - `http://localhost:3000/*` (o `bun run dev`)
-     - `http://localhost:4173/*` (o `bun run preview`)
-   - **Restrições de API**: escolha **Restringir chave** e marque só **Google Sheets API**.
-6. Salve. A mudança pode levar alguns minutos para valer.
-7. Copie a chave para `DEFAULT_API_KEY` em `src/services/GoogleSheetsService.ts` e faça push.
-
-Use o domínio inteiro (`https://ip-abna.github.io/*`), não
-`https://ip-abna.github.io/gsip-dashboard/*`. Quando o site chama a API do Google, o
-navegador envia só o domínio, sem o caminho. Uma regra com `/gsip-dashboard/` bloqueia
-o próprio site.
-
-## 3. Ligar o formulário a uma planilha (uma vez)
+## 2. Ligar o formulário a uma planilha (uma vez)
 
 O formulário não cria a planilha sozinho, nem quando recebe uma resposta. Alguém cria
 uma vez, e ela fica no Drive de quem clicou. Por isso, entre antes na conta Google da
@@ -51,20 +27,38 @@ ABNA.
    chamada "Respostas ao formulário 1".
 4. Na planilha, em **Arquivo → Configurações**, confira o fuso horário **(GMT-03:00)
    São Paulo**. É ele que decide a hora no "Carimbo de data/hora".
-5. Em **Compartilhar → Acesso geral**, escolha **Qualquer pessoa com o link → Leitor**.
-   A chave da API só lê planilhas públicas.
-6. Copie o ID da planilha (o trecho entre `/d/` e `/edit` na URL) para
-   `DEFAULT_SPREADSHEET_ID` em `src/services/GoogleSheetsService.ts` e faça push.
+5. Não compartilhe a planilha. Ela fica privada: só o proxy (passo 3) lê ela, com a
+   sua conta.
 
 A planilha antiga para de receber respostas, mas guarda as que já tinha.
 
+## 3. Publicar as respostas com o proxy (uma vez por planilha)
+
+O script mora na planilha que ele lê. Cole na planilha nova, nunca na antiga.
+
+1. Na planilha nova: **Extensões → Apps Script**. Apague o que está lá, cole
+   `apps-script/Code.gs` e salve.
+2. **Implantar → Novo deploy → app da Web**:
+   - Executar como: **eu**
+   - Acesso: **Qualquer pessoa**
+3. Autorize quando o Google pedir e copie o endereço (termina em `/exec`).
+4. Abra o endereço no navegador: deve mostrar `{"rows":[…],"locale":"pt_BR"}`.
+   Procure `Email` na página. Sem resultado, nomes e contatos não vazam.
+5. Copie o endereço para `DEFAULT_PROXY_URL` em `src/services/ResponsesProxy.ts`
+   e faça push.
+
+Mudou o script depois? Cole de novo no Apps Script e vá em **Implantar →
+Gerenciar implantações → Nova versão**. O endereço continua o mesmo. Mantenha
+`apps-script/Code.gs` igual ao que está lá: ele é a cópia de segurança.
+
 ## Antes de mexer no formulário ou na planilha
 
-O painel lê a aba de respostas mais nova ("Respostas ao formulário N") e acha cada
-coluna pelo título da pergunta.
+O proxy lê a aba de respostas mais nova ("Respostas ao formulário N") e o painel acha
+cada coluna pelo título da pergunta.
 
 - **Religar o formulário é seguro.** O Google cria uma aba nova ("Respostas ao
-  formulário 5") com todas as respostas, e o painel passa a ler essa aba sozinho.
+  formulário 5") com todas as respostas, e o proxy passa a ler essa aba sozinho. Sem
+  redeploy.
 - **Renomear uma pergunta renomeia a coluna.** Maiúsculas e espaços a mais não
   importam. Trocar palavras faz o painel perder o dado, e ele mostra no topo o aviso
   "Parte dos dados da planilha não aparece no painel", com o nome da pergunta. Para
@@ -73,13 +67,12 @@ coluna pelo título da pergunta.
   Atividade" ou "Formato do Atendimento" tira do painel as respostas com a opção nova.
   O mesmo aviso diz quantas e qual opção. As opções que o painel conhece ficam em
   `src/utils/DataParser.ts`.
-- **Pergunta nova vira coluna nova** no fim da aba. O painel lê a aba inteira, mas
-  só mostra a pergunta nova depois que alguém programar isso.
-- **A localidade da planilha pode ser qualquer uma.** O painel lê as datas na ordem
-  que ela usa (04/11 no Brasil, 11/4 nos EUA) e recebe os números sem formatação.
+- **Pergunta nova vira coluna nova** no fim da aba. O proxy publica ela, mas o painel
+  só mostra depois que alguém programar isso.
+- **Nunca deixe a planilha pública.** O proxy é a única porta de saída, e ele barra
+  Email, Nome e Telefone (lista `BLOCKED_COLUMNS` em `apps-script/Code.gs`).
 - A coluna `ID_Resposta` e as abas `Materiais` e `Materiais Concatenados` vêm de um
-  script da planilha (**Extensões → Apps Script**), não do formulário. O painel não
-  usa nenhum deles. Numa planilha nova eles não existem, e o painel funciona igual.
+  outro script da planilha antiga, não do formulário. O painel não usa nenhum deles.
 
 ## Publicar
 
@@ -95,14 +88,13 @@ Abra o site, aperte F12 e veja a aba **Console**.
 
 - **Página em branco, com erros 404 em `assets/`**: o site buscou os arquivos no
   caminho errado. Confira se `vite.config.ts` tem `base: './'`.
-- **"O Google negou o acesso" (403)**: a chave não aceita o endereço do site. Adicione
-  o domínio nas restrições da chave (passo 2). Se o domínio já está lá, confira se a
-  planilha está pública (passo 3).
-- **"Planilha não encontrada" (404)**: o `DEFAULT_SPREADSHEET_ID` está errado.
-- **"O Google recusou a requisição" (400)**: a chave em `DEFAULT_API_KEY` está errada
-  ou foi apagada. Crie outra (passo 2).
-- **"A planilha não tem uma aba de respostas"**: o formulário não está ligado a esta
-  planilha. Ligue pelo passo 3.
+- **"Erro de rede"**: o navegador não alcançou o Google. Confira sua conexão e tente
+  de novo.
+- **"O proxy respondeu com erro"**: o Google está instável. Tente em instantes.
+- **"O proxy não tem respostas para entregar"**: o formulário não está ligado a esta
+  planilha. Ligue pelo passo 2. Sem redeploy: o proxy lê a planilha ao vivo.
+- **"O proxy devolveu um formato que o painel não entende"**: o `Code.gs` na planilha
+  está desatualizado. Cole o atual (passo 3) e crie uma nova versão do deploy.
 - **Aviso "Parte dos dados da planilha não aparece no painel"**: abra o aviso. Ele diz
   qual pergunta ou opção mudou. Veja "Antes de mexer no formulário ou na planilha".
 - **O build falhou**: veja o log na aba **Actions**. Rode `bun run build` na sua

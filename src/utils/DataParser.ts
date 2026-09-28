@@ -97,6 +97,14 @@ function columnKey(header: string): string {
 }
 
 /**
+ * Colunas que podem faltar sem ser pergunta sumida. Os títulos precisam bater
+ * com BLOCKED_COLUMNS em apps-script/Code.gs (o proxy as barra de propósito).
+ */
+const IGNORED_ABSENT_COLUMNS = new Set(
+    ['ID_Resposta', 'Email', 'Nome', 'Telefone'].map(columnKey)
+);
+
+/**
  * Reindexa a linha pela chave de coluna. Se dois cabeçalhos caem na mesma chave,
  * fica o que tem valor: cada resposta preenche só uma das duas perguntas.
  */
@@ -156,9 +164,11 @@ export class DataParser {
         // Toda linha tem os mesmos cabeçalhos (os da aba), então a primeira basta
         const present = byColumnKey(rows[0]);
         this.issues = {
-            // ID_Resposta vem do script da planilha, não do formulário: faltar não é pergunta sumida
+            // Faltar não é pergunta sumida: ID_Resposta vem de um script da planilha, e
+            // Email/Nome/Telefone o proxy barra de propósito (BLOCKED_COLUMNS em
+            // apps-script/Code.gs) para não expor dados pessoais
             missingColumns: [...this.requestedColumns]
-                .filter(([key]) => !(key in present) && key !== columnKey('ID_Resposta'))
+                .filter(([key]) => !(key in present) && !IGNORED_ABSENT_COLUMNS.has(key))
                 .map(([, title]) => title),
             skippedResponses: [...skipped].map(([reason, count]) => ({ reason, count }))
         };

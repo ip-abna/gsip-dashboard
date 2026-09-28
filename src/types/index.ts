@@ -240,18 +240,6 @@ export interface FilterContextValue {
 }
 
 // ============================================================================
-// Tipos de Configuração de Serviço
-// ============================================================================
-
-/**
- * Configuração da API do Google Sheets
- */
-export interface GoogleSheetsConfig {
-    apiKey: string;
-    spreadsheetId: string;
-}
-
-// ============================================================================
 // Extensões de Tipo Global
 // ============================================================================
 

@@ -12,7 +12,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { CampaignRecord, DataContextValue, DataIssues } from '../types';
-import { createGoogleSheetsService } from '../services';
+import { createResponsesProxy } from '../services';
 import { DataParser } from '../utils/DataParser';
 
 // Chave de cache para sessionStorage
@@ -107,8 +107,8 @@ export function DataProvider({ children }: DataProviderProps) {
         setError(null);
 
         try {
-            // Busca as respostas brutas do Google Sheets
-            const service = createGoogleSheetsService();
+            // Busca as respostas através do proxy (a planilha é privada)
+            const service = createResponsesProxy();
             const { rows, locale } = await service.fetchData();
 
             // A localidade da planilha decide a ordem de dia e mês nas datas

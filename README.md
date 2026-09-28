@@ -62,10 +62,11 @@ src/
 
 ## Google Sheets
 
-O painel lê as respostas do formulário direto de uma planilha pública do Google. A
-chave da API e o ID da planilha ficam em `src/services/GoogleSheetsService.ts`. O
-painel acha sozinho a aba de respostas. Para testar outro valor na sua máquina sem
-mexer no código, copie `.env.example` para `.env` e descomente a linha que quer trocar.
+O painel lê as respostas do formulário através de um proxy (Apps Script) que roda
+dentro de uma planilha privada e publica só as colunas que o painel mostra, sem
+Email, Nome e Telefone. O endereço do proxy fica em `src/services/ResponsesProxy.ts`
+e o código do script em `apps-script/Code.gs`. Para testar outro endereço na sua
+máquina sem mexer no código, copie `.env.example` para `.env` e descomente a linha.
 
 ## Publicação
 
