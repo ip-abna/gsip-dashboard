@@ -32,8 +32,11 @@ function doGet() {
         headers.forEach(function (header, i) {
             if (BLOCKED_COLUMNS.indexOf(header.trim()) !== -1) return;
             var value = cells[i];
-            if (value === '' || value === null || value === undefined) return;
-            row[header] = value instanceof Date ? value.toISOString() : value;
+            // Resposta em branco vira null, com a chave presente: sem a chave o
+            // painel acha que a pergunta sumiu do formulário e mostra o aviso
+            row[header] = (value === '' || value === null || value === undefined)
+                ? null
+                : (value instanceof Date ? value.toISOString() : value);
         });
         return row;
     });
