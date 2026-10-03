@@ -77,9 +77,7 @@ export function Header({ selectedCSR }: HeaderProps) {
                             {/* Título para leitores de tela/SEO; a marca visual vive no banner. */}
                             <h1 className="sr-only">Relatório Nacional de RP/IP</h1>
                             {selectedCSR && (
-                                <p className="text-sm font-medium text-white/90">
-                                    {selectedCSR}
-                                </p>
+                                <p className="text-sm font-medium text-white/90">{selectedCSR}</p>
                             )}
                         </Link>
 
@@ -101,12 +99,14 @@ export function Header({ selectedCSR }: HeaderProps) {
                 => topbar e banner se fundem num único masthead.
                 ponytail: `scale` recorta a franja clara de ~1px das bordas do JPEG; ao receber
                 um SVG/PNG transparente em alta resolução, remova o scale e a cor de fundo fixa. */}
-            <div style={{ backgroundColor: BANNER_BG, marginTop: -navHeight, paddingTop: navHeight }}>
+            <div
+                style={{ backgroundColor: BANNER_BG, marginTop: -navHeight, paddingTop: navHeight }}
+            >
                 <div className="container mx-auto px-4 pt-2 pb-4 md:pb-6">
                     <div className="mx-auto w-full max-w-3xl overflow-hidden">
                         <img
                             src={headerImage}
-                            alt="Relatório Nacional de Informação ao Público — ABNA · Narcóticos Anônimos"
+                            alt="Relatório Nacional de Informação ao Público da ABNA · Narcóticos Anônimos"
                             fetchPriority="high"
                             width={576}
                             height={146}
