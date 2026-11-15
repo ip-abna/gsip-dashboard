@@ -253,7 +253,7 @@ export function FilterProvider({ children, initialFilter }: FilterProviderProps)
  * Hook customizado para usar o FilterContext
  * @throws {Error} Se usado fora de um FilterProvider
  */
-// eslint-disable-next-line react-refresh/only-export-components
+// oxlint-disable-next-line react/only-export-components
 export function useFilters(): FilterContextValue {
     const context = useContext(FilterContext);
 
