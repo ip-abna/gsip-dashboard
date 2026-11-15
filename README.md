@@ -6,7 +6,8 @@ Um painel em React para visualizar os dados das campanhas de Narcóticos Anônim
 
 ## Tecnologias
 
-- **Framework**: React 18+ com TypeScript
+- **Framework**: React 18+ com TypeScript 7
+- **Lint**: oxlint 1.93
 - **Ferramenta de build**: Vite 7+
 - **Gerenciador de pacotes**: Bun
 - **Estilização**: Tailwind CSS 4+
@@ -30,6 +31,10 @@ Não precisa de `.env`: a chave da API e a planilha já estão no código (veja
 [Google Sheets](#google-sheets)).
 
 ### Desenvolvimento
+
+O lint usa oxlint. As regras `purity`, `component-hook-factories`, `config` e `gating`
+continuam no plugin de React já usado pelo projeto, carregado pelo oxlint. Isso mantém
+as mesmas verificações sem adicionar regras novas.
 
 ```bash
 # Iniciar servidor de desenvolvimento

@@ -1,0 +1,79 @@
+{
+  "extends": [
+    "./node_modules/@gusnips/oxlint/base.json"
+  ],
+  "plugins": [],
+  "ignorePatterns": [
+    "dist"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.{ts,tsx}"
+      ],
+      "plugins": [
+        "react"
+      ],
+      "rules": {
+        "no-unused-vars": [
+          "error",
+          {
+            "vars": "all",
+            "args": "after-used",
+            "caughtErrors": "all"
+          }
+        ],
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "warn",
+        "react/static-components": "error",
+        "react/use-memo": "error",
+        "react/preserve-manual-memoization": "error",
+        "react/incompatible-library": "warn",
+        "react/immutability": "error",
+        "react/globals": "error",
+        "react/refs": "error",
+        "react/set-state-in-effect": "error",
+        "react/error-boundaries": "error",
+        "react/purity": "off",
+        "react/set-state-in-render": "error",
+        "react/unsupported-syntax": "warn",
+        "react/only-export-components": [
+          "error",
+          {
+            "allowConstantExport": true
+          }
+        ],
+        "react/forward-ref-uses-ref": "off",
+        "react/jsx-key": "off",
+        "react/jsx-no-duplicate-props": "off",
+        "react/jsx-no-undef": "off",
+        "react/jsx-props-no-spread-multi": "off",
+        "react/no-children-prop": "off",
+        "react/no-danger-with-children": "off",
+        "react/no-did-mount-set-state": "off",
+        "react/no-did-update-set-state": "off",
+        "react/no-direct-mutation-state": "off",
+        "react/no-find-dom-node": "off",
+        "react/no-is-mounted": "off",
+        "react/no-render-return-value": "off",
+        "react/no-string-refs": "off",
+        "react/no-this-in-sfc": "off",
+        "react/no-unsafe": "off",
+        "react/no-will-update-set-state": "off",
+        "react/void-dom-elements-no-children": "off",
+        "react/void-use-memo": "off",
+        "typescript/no-useless-empty-export": "off",
+        "react-hooks-js/purity": "error",
+        "react-hooks-js/component-hook-factories": "error",
+        "react-hooks-js/config": "error",
+        "react-hooks-js/gating": "error"
+      }
+    }
+  ],
+  "jsPlugins": [
+    {
+      "name": "react-hooks-js",
+      "specifier": "eslint-plugin-react-hooks"
+    }
+  ]
+}

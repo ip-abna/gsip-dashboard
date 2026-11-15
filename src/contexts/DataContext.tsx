@@ -192,7 +192,7 @@ export function DataProvider({ children }: DataProviderProps) {
  * Hook customizado para usar o DataContext
  * @throws {Error} Se usado fora de um DataProvider
  */
-// eslint-disable-next-line react-refresh/only-export-components
+// oxlint-disable-next-line react/only-export-components
 export function useData(): DataContextValue {
     const context = useContext(DataContext);
 
